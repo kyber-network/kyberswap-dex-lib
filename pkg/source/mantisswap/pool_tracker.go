@@ -3,10 +3,13 @@ package mantisswap
 import (
 	"context"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
+	"time"
+
 	"github.com/KyberNetwork/ethrpc"
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/source/pool"
 	"github.com/KyberNetwork/logger"
-	"time"
 )
 
 type PoolTracker struct {
@@ -21,7 +24,12 @@ func NewPoolTracker(config *Config, ethrpcClient *ethrpc.Client) *PoolTracker {
 	}
 }
 
-func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entity.Pool, error) {
+
+func (d *PoolTracker) GetNewPoolState(
+	ctx context.Context,
+	p entity.Pool,
+	_ pool.GetNewPoolStateParams,
+) (entity.Pool, error) {
 	logger.WithFields(logger.Fields{
 		"address": p.Address,
 	}).Infof("[%s] Start getting new states of pool", p.Type)
@@ -101,6 +109,13 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 			Method: lpMethodLiabilityLimit,
 			Params: nil,
 		}, []interface{}{&lp.LiabilityLimit})
+
+		calls.AddCall(&ethrpc.Call{
+			ABI:    MainPoolABI,
+			Target: p.Address,
+			Method: mainPoolMethodTokenOraclePrice,
+			Params: []interface{}{common.HexToAddress(lp.Address)},
+		}, []interface{}{&lp.TokenOraclePrice})
 	}
 	if _, err := calls.Aggregate(); err != nil {
 		logger.Errorf("failed to aggregate calls with err %v", err)
