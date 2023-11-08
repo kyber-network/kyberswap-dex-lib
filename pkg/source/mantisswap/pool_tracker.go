@@ -3,6 +3,7 @@ package mantisswap
 import (
 	"context"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"time"
 
 	"github.com/KyberNetwork/ethrpc"
@@ -22,6 +23,7 @@ func NewPoolTracker(config *Config, ethrpcClient *ethrpc.Client) *PoolTracker {
 		ethrpcClient: ethrpcClient,
 	}
 }
+
 
 func (d *PoolTracker) GetNewPoolState(
 	ctx context.Context,
@@ -107,6 +109,13 @@ func (d *PoolTracker) GetNewPoolState(
 			Method: lpMethodLiabilityLimit,
 			Params: nil,
 		}, []interface{}{&lp.LiabilityLimit})
+
+		calls.AddCall(&ethrpc.Call{
+			ABI:    MainPoolABI,
+			Target: p.Address,
+			Method: mainPoolMethodTokenOraclePrice,
+			Params: []interface{}{common.HexToAddress(lp.Address)},
+		}, []interface{}{&lp.TokenOraclePrice})
 	}
 	if _, err := calls.Aggregate(); err != nil {
 		logger.Errorf("failed to aggregate calls with err %v", err)

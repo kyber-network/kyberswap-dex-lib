@@ -19,6 +19,7 @@ func Swap(
 	if paused {
 		return nil, nil, ErrWombatPoolAlreadyPaused
 	}
+
 	if err := checkSameAddress(fromToken, toToken); err != nil {
 		return nil, nil, err
 	}

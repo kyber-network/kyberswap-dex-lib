@@ -4,19 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/KyberNetwork/ethrpc"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/eth"
+	graphqlPkg "github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/graphql"
+	"github.com/KyberNetwork/logger"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/machinebox/graphql"
 	"math/big"
 	"strings"
 	"time"
 
-	"github.com/KyberNetwork/ethrpc"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/source/pool"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/eth"
-	graphqlPkg "github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/graphql"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/valueobject"
-	"github.com/KyberNetwork/logger"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/machinebox/graphql"
 )
 
 type PoolTracker struct {
@@ -73,12 +71,15 @@ func (d *PoolTracker) GetNewPoolState(
 		Method: poolMethodEndCovRatio,
 		Params: nil,
 	}, []interface{}{&endcovRatio})
+
 	calls.AddCall(&ethrpc.Call{
 		ABI:    PoolV2ABI,
 		Target: p.Address,
 		Method: poolMethodPaused,
 		Params: nil,
 	}, []interface{}{&paused})
+
+ 
 	for i, token := range p.Tokens {
 		calls.AddCall(&ethrpc.Call{
 			ABI:    PoolV2ABI,
@@ -86,6 +87,7 @@ func (d *PoolTracker) GetNewPoolState(
 			Method: poolMethodAddressOfAsset,
 			Params: []interface{}{common.HexToAddress(token.Address)},
 		}, []interface{}{&assetAddresses[i]})
+
 	}
 	if _, err := calls.TryAggregate(); err != nil {
 		logger.WithFields(logger.Fields{
@@ -104,6 +106,7 @@ func (d *PoolTracker) GetNewPoolState(
 	assetCalls := d.ethrpcClient.NewRequest().SetContext(ctx)
 	for i, assetAddress := range assetAddresses {
 		assetCalls.AddCall(&ethrpc.Call{
+
 			ABI:    DynamicAssetABI,
 			Target: assetAddress.Hex(),
 			Method: assetMethodCash,
@@ -116,6 +119,7 @@ func (d *PoolTracker) GetNewPoolState(
 			Params: nil,
 		}, []interface{}{&liabilities[i]})
 		assetCalls.AddCall(&ethrpc.Call{
+   
 			ABI:    DynamicAssetABI,
 			Target: assetAddress.Hex(),
 			Method: assetMethodGetRelativePrice,
@@ -123,6 +127,8 @@ func (d *PoolTracker) GetNewPoolState(
 		}, []interface{}{&relativePrices[i]})
 	}
 	if _, err := assetCalls.TryAggregate(); err != nil {
+
+
 		logger.WithFields(logger.Fields{
 			"type":    p.Type,
 			"address": p.Address,
@@ -205,7 +211,9 @@ func (d *PoolTracker) querySubgraph(
 	p entity.Pool,
 ) (*SubgraphAsset, error) {
 	req := graphql.NewRequest(fmt.Sprintf(`{
+
 		_meta { block { timestamp }}
+
 		pool(
 			id: "%v"
 		  ) {
@@ -218,8 +226,10 @@ func (d *PoolTracker) querySubgraph(
 	)
 
 	var response struct {
+
 		Pool *SubgraphAsset            `json:"pool"`
 		Meta *valueobject.SubgraphMeta `json:"_meta"`
+
 	}
 	if err := d.graphqlClient.Run(ctx, req, &response); err != nil {
 		logger.WithFields(logger.Fields{
@@ -229,7 +239,8 @@ func (d *PoolTracker) querySubgraph(
 		return nil, err
 	}
 
-	response.Meta.CheckIsLagging(d.config.DexID, p.Address)
 
+	response.Meta.CheckIsLagging(d.config.DexID, p.Address)
 	return response.Pool, nil
 }
+

@@ -9,10 +9,10 @@ const (
 	poolTypeWombatMain       = "wombat-main"
 	poolTypeWombatCrossChain = "wombat-cross-chain"
 
+
 	assetMethodGetRelativePrice = "getRelativePrice"
 	assetMethodCash             = "cash"
 	assetMethodLiability        = "liability"
-
 	poolMethodAddressOfAsset         = "addressOfAsset"
 	poolMethodAmpFactor              = "ampFactor"
 	poolMethodEndCovRatio            = "endCovRatio"
