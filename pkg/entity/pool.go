@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/bignumber"
+	mapset "github.com/deckarep/golang-set/v2"
 )
 
 type PoolReserves []string
@@ -54,6 +55,8 @@ type Pool struct {
 	Extra        string       `json:"extra,omitempty"`
 	StaticExtra  string       `json:"staticExtra,omitempty"`
 	TotalSupply  string       `json:"totalSupply,omitempty"`
+
+	Dependencies mapset.Set[string] `json:"dependencies,omitempty"`
 }
 
 func (p Pool) IsZero() bool { return len(p.Address) == 0 && len(p.Tokens) == 0 }
@@ -84,15 +87,25 @@ func (p Pool) GetLpToken() string {
 
 // HasReserves check if a pool has correct reserves or not
 // if there is no reserve in pool, or reserve is empty string, or reserve = "0", this function returns false
+// if pool has equals or more than 2 tokens have reserve, this function returns true
 func (p Pool) HasReserves() bool {
 	if (len(p.Reserves)) == 0 {
 		return false
 	}
 
+	zeroReserveCount := 0
 	for _, reserve := range p.Reserves {
 		if len(reserve) == 0 || reserve == "0" {
-			return false
+			zeroReserveCount += 1
 		}
+	}
+
+	return len(p.Reserves)-zeroReserveCount >= 2
+}
+
+func (p Pool) HasReserve(reserve string) bool {
+	if len(reserve) == 0 || reserve == "0" {
+		return false
 	}
 
 	return true

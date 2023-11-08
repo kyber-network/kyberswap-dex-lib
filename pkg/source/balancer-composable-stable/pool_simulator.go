@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/KyberNetwork/logger"
+
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/source/pool"
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/util/bignumber"
@@ -90,7 +92,7 @@ func (c *PoolSimulator) CalcAmountOut(tokenAmountIn pool.TokenAmount, tokenOut s
 		fee       *pool.TokenAmount
 		err       error
 	)
-
+	logger.Warnf("debug from balancer composable: %s %s %s\n", tokenAmountIn.Amount.String(), tokenAmountIn.Token, tokenOut)
 	if tokenAmountIn.Token == c.Info.Address || tokenOut == c.Info.Address {
 		amountOut, fee, err = c._swapWithBptGivenIn(tokenAmountIn.Amount, indexIn, indexOut)
 	} else {
@@ -99,7 +101,6 @@ func (c *PoolSimulator) CalcAmountOut(tokenAmountIn pool.TokenAmount, tokenOut s
 	if err != nil {
 		return nil, err
 	}
-
 	return &pool.CalcAmountOutResult{
 		TokenAmountOut: &pool.TokenAmount{
 			Token:  tokenOut,

@@ -11,6 +11,7 @@ import (
 
 type PoolSimulator struct {
 	pool.Pool
+	paused        bool
 	haircutRate   *big.Int
 	ampFactor     *big.Int
 	startCovRatio *big.Int
@@ -25,7 +26,7 @@ func NewPoolSimulator(entityPool entity.Pool) (*PoolSimulator, error) {
 		return nil, err
 	}
 
-	var tokens = make([]string, len(entityPool.Tokens))
+	var tokens = make([]string, 0, len(entityPool.Tokens))
 	for _, token := range entityPool.Tokens {
 		tokens = append(tokens, token.Address)
 	}
@@ -40,6 +41,7 @@ func NewPoolSimulator(entityPool entity.Pool) (*PoolSimulator, error) {
 				Checked:  false,
 			},
 		},
+		paused:        extra.Paused,
 		haircutRate:   extra.HaircutRate,
 		ampFactor:     extra.AmpFactor,
 		startCovRatio: extra.StartCovRatio,
@@ -60,9 +62,9 @@ func (p *PoolSimulator) CalcAmountOut(
 		return &pool.CalcAmountOutResult{}, fmt.Errorf("tokenInIndex %v or tokenOutIndex %v is not correct", tokenInIndex, tokenOutIndex)
 	}
 
-	amountOut, haircut, err := QuotePotentialSwap(
+	amountOut, haircut, err := Swap(
 		tokenAmountIn.Token, tokenOut, tokenAmountIn.Amount,
-		p.haircutRate, p.ampFactor, p.startCovRatio, p.endCovRatio,
+		p.paused, p.haircutRate, p.ampFactor, p.startCovRatio, p.endCovRatio,
 		p.assets,
 	)
 	if err != nil {
