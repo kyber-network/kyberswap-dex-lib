@@ -4,7 +4,6 @@ import (
 	"errors"
 	"math/big"
 	"sync"
-
 	"github.com/KyberNetwork/logger"
 )
 
@@ -138,7 +137,6 @@ func CalcAmountOut(pool IPoolSimulator, tokenAmountIn TokenAmount, tokenOut stri
 
 	return pool.CalcAmountOut(tokenAmountIn, tokenOut)
 }
-
 // Inventory is a map of tokenAddress- balance.
 // The balance is stored WITHOUT decimals
 // DONOT directly modify it
@@ -186,3 +184,4 @@ func (i *Inventory) UpdateBalance(decreaseTokenAddress, increaseTokenAddress str
 	i.Balance[increaseTokenAddress] = increasedTokenBalance.Add(decreasedTokenBalance, increaseDelta)
 	return big.NewInt(0).Set(i.Balance[decreaseTokenAddress]), big.NewInt(0).Set(i.Balance[increaseTokenAddress]), nil
 }
+
