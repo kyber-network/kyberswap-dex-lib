@@ -73,9 +73,9 @@ func (d *PoolListUpdater) getNewPoolFromSubgraph(ctx context.Context, lastCreate
 	subgraphPools, err := d.querySubgraph(ctx, lastCreateTime, d.config.NewPoolLimit, 0)
 	if err != nil {
 		logger.WithFields(logger.Fields{
-			"type":  poolABI,
+			"type":  DexTypeMaverickV1,
 			"error": err,
-		})
+		}).Errorf("failed to query subgraph")
 		return nil, lastCreateTime, err
 	}
 

@@ -3,12 +3,14 @@ package maverickv1
 import (
 	"context"
 	"encoding/json"
-	"github.com/KyberNetwork/ethrpc"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
-	"github.com/KyberNetwork/logger"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/KyberNetwork/ethrpc"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/source/pool"
+	"github.com/KyberNetwork/logger"
 )
 
 type PoolTracker struct {
@@ -26,7 +28,11 @@ func NewPoolTracker(
 	}
 }
 
-func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entity.Pool, error) {
+func (d *PoolTracker) GetNewPoolState(
+	ctx context.Context,
+	p entity.Pool,
+	_ pool.GetNewPoolStateParams,
+) (entity.Pool, error) {
 	logger.WithFields(logger.Fields{
 		"address": p.Address,
 	}).Infof("[%s] Start getting new state of pool", p.Type)
@@ -94,9 +100,9 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 	protocolFeeRatio := big.NewInt(int64(getStateResult.State.ProtocolFeeRatio))
 
 	binLength := int(binCounter.Int64())
-	binRaws := make([]GetBinResult, binLength)
+	binRaws := make([]GetBinResult, binLength+1)
 	binCalls := d.ethrpcClient.NewRequest().SetContext(ctx)
-	for i := 0; i < binLength; i++ {
+	for i := 0; i <= binLength; i++ {
 		binCalls.AddCall(&ethrpc.Call{
 			ABI:    poolABI,
 			Target: p.Address,
@@ -119,7 +125,7 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 	binMap := make(map[string]*big.Int)
 	for i, binRaw := range binRaws {
 		if binRaw.BinState.MergeID.Cmp(zeroBI) != 0 ||
-			(binRaw.BinState.ReserveA.Cmp(zeroBI) == 0 && binRaw.BinState.ReserveB.Cmp(zeroBI) == 0 && big.NewInt(int64(binRaw.BinState.LowerTick)).Cmp(activeTick) != 0) {
+			(binRaw.BinState.ReserveA.Cmp(zeroBI) == 0 && binRaw.BinState.ReserveB.Cmp(zeroBI) == 0) {
 			continue
 		}
 

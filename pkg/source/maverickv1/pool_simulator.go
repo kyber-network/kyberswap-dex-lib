@@ -104,12 +104,12 @@ func (p *Pool) CalcAmountOut(
 
 		var scaleAmountOut *big.Int
 		if strings.EqualFold(tokenAmountIn.Token, p.Pool.Info.Tokens[0]) {
-			scaleAmountOut, err = scaleToAmount(amountOut, p.decimals[1])
+			scaleAmountOut, err = ScaleToAmount(amountOut, p.decimals[1])
 			if err != nil {
 				return &pool.CalcAmountOutResult{}, fmt.Errorf("can not scale amount maverick, err: %v", err)
 			}
 		} else {
-			scaleAmountOut, err = scaleToAmount(amountOut, p.decimals[0])
+			scaleAmountOut, err = ScaleToAmount(amountOut, p.decimals[0])
 			if err != nil {
 				return &pool.CalcAmountOutResult{}, fmt.Errorf("can not scale amount maverick, err: %v", err)
 			}
@@ -125,9 +125,9 @@ func (p *Pool) CalcAmountOut(
 				Amount: nil,
 			},
 			Gas: p.gas.Swap,
-			SwapInfo: MaverickSwapInfo{
-				ActiveTick: newState.ActiveTick,
-				Bins:       newState.Bins,
+			SwapInfo: maverickSwapInfo{
+				activeTick: newState.ActiveTick,
+				bins:       newState.Bins,
 			},
 		}, nil
 	}
@@ -136,14 +136,14 @@ func (p *Pool) CalcAmountOut(
 }
 
 func (p *Pool) UpdateBalance(params pool.UpdateBalanceParams) {
-	newState, ok := params.SwapInfo.(MaverickSwapInfo)
+	newState, ok := params.SwapInfo.(maverickSwapInfo)
 	if !ok {
 		logger.Warn("failed to UpdateBalancer for Maverick pool, wrong swapInfo type")
 		return
 	}
 
-	p.state.Bins = newState.Bins
-	p.state.ActiveTick = newState.ActiveTick
+	p.state.Bins = newState.bins
+	p.state.ActiveTick = newState.activeTick
 }
 
 func (p *Pool) GetMetaInfo(tokenIn string, tokenOut string) interface{} {
@@ -151,15 +151,40 @@ func (p *Pool) GetMetaInfo(tokenIn string, tokenOut string) interface{} {
 }
 
 func (p *Pool) deepcopyState(state *MaverickPoolState) (*MaverickPoolState, error) {
-	stateBytes, err := json.Marshal(state)
-	if err != nil {
-		return nil, err
+	newState := &MaverickPoolState{
+		TickSpacing:      new(big.Int).Set(state.TickSpacing),
+		Fee:              new(big.Int).Set(state.Fee),
+		ProtocolFeeRatio: new(big.Int).Set(state.ProtocolFeeRatio),
+		ActiveTick:       new(big.Int).Set(state.ActiveTick),
+		BinCounter:       new(big.Int).Set(state.BinCounter),
 	}
 
-	var newState MaverickPoolState
-	if err := json.Unmarshal(stateBytes, &newState); err != nil {
-		return nil, err
+	// Clone state.Bins
+	newState.Bins = make(map[string]Bin, len(state.Bins))
+	for k, v := range state.Bins {
+		newState.Bins[k] = Bin{
+			ReserveA:  new(big.Int).Set(v.ReserveA),
+			ReserveB:  new(big.Int).Set(v.ReserveB),
+			LowerTick: new(big.Int).Set(v.LowerTick),
+			Kind:      new(big.Int).Set(v.Kind),
+			MergeID:   new(big.Int).Set(v.MergeID),
+		}
 	}
 
-	return &newState, nil
+	// Clone state.BinPositions
+	newState.BinPositions = make(map[string]map[string]*big.Int, len(state.BinPositions))
+	for k, v := range state.BinPositions {
+		newState.BinPositions[k] = make(map[string]*big.Int, len(v))
+		for k1, v1 := range v {
+			newState.BinPositions[k][k1] = new(big.Int).Set(v1)
+		}
+	}
+
+	// Clone state.BinMap
+	newState.BinMap = make(map[string]*big.Int, len(state.BinMap))
+	for k, v := range state.BinMap {
+		newState.BinMap[k] = new(big.Int).Set(v)
+	}
+
+	return newState, nil
 }
