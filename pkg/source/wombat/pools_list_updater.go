@@ -107,7 +107,6 @@ func (d *PoolsListUpdater) getNewPoolFromSubgraph(ctx context.Context, lastCreat
 		if poolType == poolTypeWombatCrossChain {
 			continue
 		}
-
 		var newPool = entity.Pool{
 			Address:   p.ID,
 			Exchange:  d.config.DexID,

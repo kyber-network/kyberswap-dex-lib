@@ -71,12 +71,15 @@ func (d *PoolTracker) GetNewPoolState(
 		Method: poolMethodEndCovRatio,
 		Params: nil,
 	}, []interface{}{&endcovRatio})
+
 	calls.AddCall(&ethrpc.Call{
 		ABI:    PoolV2ABI,
 		Target: p.Address,
 		Method: poolMethodPaused,
 		Params: nil,
 	}, []interface{}{&paused})
+
+ 
 	for i, token := range p.Tokens {
 		calls.AddCall(&ethrpc.Call{
 			ABI:    PoolV2ABI,
@@ -84,6 +87,7 @@ func (d *PoolTracker) GetNewPoolState(
 			Method: poolMethodAddressOfAsset,
 			Params: []interface{}{common.HexToAddress(token.Address)},
 		}, []interface{}{&assetAddresses[i]})
+
 	}
 	if _, err := calls.TryAggregate(); err != nil {
 		logger.WithFields(logger.Fields{
@@ -102,6 +106,7 @@ func (d *PoolTracker) GetNewPoolState(
 	assetCalls := d.ethrpcClient.NewRequest().SetContext(ctx)
 	for i, assetAddress := range assetAddresses {
 		assetCalls.AddCall(&ethrpc.Call{
+
 			ABI:    DynamicAssetABI,
 			Target: assetAddress.Hex(),
 			Method: assetMethodCash,
@@ -114,6 +119,7 @@ func (d *PoolTracker) GetNewPoolState(
 			Params: nil,
 		}, []interface{}{&liabilities[i]})
 		assetCalls.AddCall(&ethrpc.Call{
+   
 			ABI:    DynamicAssetABI,
 			Target: assetAddress.Hex(),
 			Method: assetMethodGetRelativePrice,
@@ -121,6 +127,8 @@ func (d *PoolTracker) GetNewPoolState(
 		}, []interface{}{&relativePrices[i]})
 	}
 	if _, err := assetCalls.TryAggregate(); err != nil {
+
+
 		logger.WithFields(logger.Fields{
 			"type":    p.Type,
 			"address": p.Address,
@@ -235,3 +243,4 @@ func (d *PoolTracker) querySubgraph(
 	response.Meta.CheckIsLagging(d.config.DexID, p.Address)
 	return response.Pool, nil
 }
+

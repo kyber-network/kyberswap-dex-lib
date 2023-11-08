@@ -3,6 +3,7 @@ package wombatlsd
 import "errors"
 
 var (
+
 	ErrTheSameAddress           = errors.New("tokenIn and tokenOut has the same address")
 	ErrFromAmountIsZero         = errors.New("fromAmount equals zero")
 	ErrAssetIsNotExist          = errors.New("asset is not exist")

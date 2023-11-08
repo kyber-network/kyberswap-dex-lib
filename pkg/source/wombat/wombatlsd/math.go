@@ -250,6 +250,9 @@ func swapQuoteFunc(ax, ay, lx, ly, dx, a *big.Int) (*big.Int, error) {
 	)
 	ry := solveQuad(b, a)
 	dy := new(big.Int).Sub(dsmath.WMul(ly, ry), ay)
+
+
+
 	if dy.Cmp(bignumber.ZeroBI) < 0 {
 		return new(big.Int).Neg(dy), nil
 	} else {
@@ -288,6 +291,7 @@ func assetOf(token string, assetMap map[string]wombat.Asset) (wombat.Asset, erro
 
 	return asset, nil
 }
+
 
 func signedSafeMathSqrt(y, guess *big.Int) *big.Int {
 	var z *big.Int
