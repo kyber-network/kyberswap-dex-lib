@@ -194,7 +194,7 @@ func TestGetAmountOut(t *testing.T) {
 							WoFeasible:   true,
 							Decimals:     8,
 							CloPrice:     bignumber.NewBig10("180211834107"),
-							CloPreferred: false,
+							CloPreferred: false
 						},
 					},
 					"0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f": {
@@ -313,6 +313,7 @@ func TestGetAmountOut(t *testing.T) {
 							Decimals:     8,
 							CloPrice:     bignumber.NewBig10("180211834107"),
 							CloPreferred: false,
+           
 						},
 					},
 					"0xff970a61a04b1ca14834a43f5de4533ebddb5cc8": {
@@ -357,7 +358,7 @@ func TestGetAmountOut(t *testing.T) {
 							WoFeasible:   true,
 							Decimals:     8,
 							CloPrice:     bignumber.NewBig10("180211834107"),
-							CloPreferred: false,
+							CloPreferred: false
 						},
 					},
 					"0xff970a61a04b1ca14834a43f5de4533ebddb5cc8": {
@@ -410,6 +411,7 @@ func TestGetAmountOut(t *testing.T) {
 						FeeRate:  bignumber.NewBig10("0"),
 						Decimals: 6,
 						State: &woofiv2.OracleState{
+
 							Price:        bignumber.NewBig10("100000000"),
 							Spread:       bignumber.NewBig10("0"),
 							Coeff:        bignumber.NewBig10("0"),

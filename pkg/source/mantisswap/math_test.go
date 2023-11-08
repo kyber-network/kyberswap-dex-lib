@@ -20,6 +20,7 @@ func TestGetAmountOut(t *testing.T) {
 		SlippageK:   bignumber.NewBig10("1000000000000000000"),
 		LPs: map[string]*mantisswap.LP{
 			"0x2791bca1f2de4661ed88a30c99a7a9449aa84174": {
+
 				Address:          "0xe03aec0d08B3158350a9aB99f6Cea7bA9513B889",
 				Decimals:         6,
 				Asset:            bignumber.NewBig10("3881700128"),

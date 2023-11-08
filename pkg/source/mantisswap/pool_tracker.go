@@ -24,6 +24,7 @@ func NewPoolTracker(config *Config, ethrpcClient *ethrpc.Client) *PoolTracker {
 	}
 }
 
+
 func (d *PoolTracker) GetNewPoolState(
 	ctx context.Context,
 	p entity.Pool,

@@ -7,6 +7,7 @@ import (
 const (
 	DexTypeMantisSwap = "mantisswap"
 
+
 	mainPoolMethodLpList           = "lpList"
 	mainPoolMethodLpRatio          = "lpRatio"
 	mainPoolMethodBaseFee          = "baseFee"

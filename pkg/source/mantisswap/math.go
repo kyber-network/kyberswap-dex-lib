@@ -34,6 +34,7 @@ func GetAmountOut(
 	if err := updateAssetLiability(amount, true, big.NewInt(0), false, false, fromLp); err != nil {
 		return nil, err
 	}
+
 	if err := updateAssetLiability(new(big.Int).Add(toAmount, treasuryFees), false, lpAmount, true, false, toLp); err != nil {
 		return nil, err
 	}
@@ -47,6 +48,7 @@ func getSwapAmount(
 	isOneTap bool,
 	fromAsset, fromLiability *big.Int,
 	state *PoolState,
+
 ) (*big.Int, *big.Int, *big.Int, error) {
 	if !state.SwapAllowed {
 		return nil, nil, nil, ErrSwapNotAllowed
@@ -353,6 +355,7 @@ func updateAssetLiability(
 	return nil
 }
 
+
 func getNetLiquidityRatio(state *PoolState) *big.Int {
 	totalAsset, totalLiability := getTotalAssetLiability(state)
 	if totalLiability.Cmp(bignumber.ZeroBI) == 0 {
@@ -396,3 +399,4 @@ func getTreasuryRatio(nlr *big.Int) *big.Int {
 		return big.NewInt(8e5)
 	}
 }
+
