@@ -60,8 +60,9 @@ var (
 	ExchangeSaddle     Exchange = "saddle"
 	ExchangeAxial      Exchange = "axial"
 
-	ExchangeCurve    Exchange = "curve"
-	ExchangeEllipsis Exchange = "ellipsis"
+	ExchangeCurve         Exchange = "curve"
+	ExchangeEllipsis      Exchange = "ellipsis"
+	ExchangePancakeStable Exchange = "pancake-stable"
 
 	ExchangeUniSwapV3        Exchange = "uniswapv3"
 	ExchangeKyberswapElastic Exchange = "kyberswap-elastic"
@@ -90,6 +91,7 @@ var (
 	ExchangeChronos   Exchange = "chronos"
 	ExchangeRamses    Exchange = "ramses"
 	ExchangeVelocore  Exchange = "velocore"
+	ExchangePearl     Exchange = "pearl"
 
 	ExchangePlatypus Exchange = "platypus"
 
@@ -154,6 +156,7 @@ var AMMSourceSet = map[Exchange]struct{}{
 	ExchangeAxial:               {},
 	ExchangeCurve:               {},
 	ExchangeEllipsis:            {},
+	ExchangePancakeStable:       {},
 	ExchangeUniSwapV3:           {},
 	ExchangeKyberswapElastic:    {},
 	ExchangeBalancer:            {},
@@ -169,6 +172,7 @@ var AMMSourceSet = map[Exchange]struct{}{
 	ExchangeKyberSwap:           {},
 	ExchangeKyberSwapStatic:     {},
 	ExchangeVelodrome:           {},
+	ExchangePearl:               {},
 	ExchangeDystopia:            {},
 	ExchangeChronos:             {},
 	ExchangeRamses:              {},

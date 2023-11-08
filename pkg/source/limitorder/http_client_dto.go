@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	listOrdersEndpoint   = "/read-partner/api/v1/orders"
-	listAllPairsEndpoint = "/read-partner/api/v1/orders/pairs"
+	listOrdersEndpoint      = "/read-partner/api/v1/orders"
+	listAllPairsEndpoint    = "/read-partner/api/v1/orders/pairs"
+	getOpSignaturesEndpoint = "/read-partner/api/v1/orders/operator-signature"
 )
 
 type (
@@ -16,6 +17,14 @@ type (
 		Code    int             `json:"code"`
 		Message string          `json:"message"`
 		Data    *listOrdersData `json:"data"`
+	}
+
+	getOpSignaturesResult struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    *struct {
+			OperatorSignatures []*operatorSignatures `json:"orders"`
+		} `json:"data"`
 	}
 
 	listAllPairsResult struct {
@@ -29,8 +38,9 @@ type (
 	}
 
 	limitOrderPair struct {
-		MakerAsset string `json:"makerAsset"`
-		TakeAsset  string `json:"takerAsset"`
+		MakerAsset      string `json:"makerAsset"`
+		TakeAsset       string `json:"takerAsset"`
+		ContractAddress string `json:"contractAddress"`
 	}
 
 	listOrdersData struct {
@@ -51,6 +61,7 @@ type (
 		TakingAmount         string `json:"takingAmount"`
 		FilledMakingAmount   string `json:"filledMakingAmount"`
 		FilledTakingAmount   string `json:"filledTakingAmount"`
+		FeeConfig            string `json:"feeConfig"`
 		FeeRecipient         string `json:"feeRecipient"`
 		MakerTokenFeePercent string `json:"makerTokenFeePercent"`
 		MakerAssetData       string `json:"makerAssetData"`
@@ -67,6 +78,7 @@ type (
 		ChainID             ChainID
 		MakerAsset          string
 		TakerAsset          string
+		ContractAddress     string
 		ExcludeExpiredOrder bool
 	}
 
@@ -82,6 +94,7 @@ type (
 		AllowedSenders       string   `json:"allowedSenders"`
 		MakingAmount         *big.Int `json:"makingAmount"`
 		TakingAmount         *big.Int `json:"takingAmount"`
+		FeeConfig            *big.Int `json:"feeConfig"`
 		FeeRecipient         string   `json:"feeRecipient"`
 		FilledMakingAmount   *big.Int `json:"filledMakingAmount"`
 		FilledTakingAmount   *big.Int `json:"filledTakingAmount"`
@@ -94,6 +107,13 @@ type (
 		Permit               string   `json:"permit"`
 		Interaction          string   `json:"interaction"`
 		ExpiredAt            int64    `json:"expiredAt"`
+	}
+
+	operatorSignatures struct {
+		ID                         int64  `json:"id"`
+		ChainID                    string `json:"chainId"`
+		OperatorSignature          string `json:"operatorSignature"`
+		OperatorSignatureExpiredAt int64  `json:"operatorSignatureExpiredAt"`
 	}
 )
 
@@ -133,6 +153,13 @@ func toOrder(ordersData []*orderData) ([]*order, error) {
 		if !ok {
 			return nil, fmt.Errorf("invalid makingAmount")
 		}
+		if len(o.FeeConfig) > 0 {
+			feeConfig, ok := new(big.Int).SetString(o.FeeConfig, 10)
+			if !ok {
+				return nil, fmt.Errorf("invalid feeConfig %v", o.FeeConfig)
+			}
+			result[i].FeeConfig = feeConfig
+		}
 		if len(o.FilledTakingAmount) > 0 {
 			filledTakingAmount, ok := new(big.Int).SetString(o.FilledTakingAmount, 10)
 			if !ok {
@@ -149,7 +176,6 @@ func toOrder(ordersData []*orderData) ([]*order, error) {
 		}
 		result[i].TakingAmount = takingAmount
 		result[i].MakingAmount = makingAmount
-
 	}
 	return result, nil
 }

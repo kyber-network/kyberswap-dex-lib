@@ -3,12 +3,14 @@ package maverickv1
 import (
 	"context"
 	"encoding/json"
-	"github.com/KyberNetwork/ethrpc"
-	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
-	"github.com/KyberNetwork/logger"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/KyberNetwork/ethrpc"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
+	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/source/pool"
+	"github.com/KyberNetwork/logger"
 )
 
 type PoolTracker struct {
@@ -26,7 +28,11 @@ func NewPoolTracker(
 	}
 }
 
-func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entity.Pool, error) {
+func (d *PoolTracker) GetNewPoolState(
+	ctx context.Context,
+	p entity.Pool,
+	_ pool.GetNewPoolStateParams,
+) (entity.Pool, error) {
 	logger.WithFields(logger.Fields{
 		"address": p.Address,
 	}).Infof("[%s] Start getting new state of pool", p.Type)
@@ -94,9 +100,9 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 	protocolFeeRatio := big.NewInt(int64(getStateResult.State.ProtocolFeeRatio))
 
 	binLength := int(binCounter.Int64())
-	binRaws := make([]GetBinResult, binLength)
+	binRaws := make([]GetBinResult, binLength+1)
 	binCalls := d.ethrpcClient.NewRequest().SetContext(ctx)
-	for i := 0; i < binLength; i++ {
+	for i := 0; i <= binLength; i++ {
 		binCalls.AddCall(&ethrpc.Call{
 			ABI:    poolABI,
 			Target: p.Address,
@@ -118,8 +124,12 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 	binPositions := make(map[string]map[string]*big.Int)
 	binMap := make(map[string]*big.Int)
 	for i, binRaw := range binRaws {
-		strI := strconv.Itoa(i)
+		if binRaw.BinState.MergeID.Cmp(zeroBI) != 0 ||
+			(binRaw.BinState.ReserveA.Cmp(zeroBI) == 0 && binRaw.BinState.ReserveB.Cmp(zeroBI) == 0) {
+			continue
+		}
 
+		strI := strconv.Itoa(i)
 		bin := Bin{
 			ReserveA:  new(big.Int).Set(binRaw.BinState.ReserveA),
 			ReserveB:  new(big.Int).Set(binRaw.BinState.ReserveB),
@@ -129,15 +139,34 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 		}
 		bins[strI] = bin
 
-		if binPositions[bin.LowerTick.String()] == nil {
-			binPositions[bin.LowerTick.String()] = make(map[string]*big.Int)
-		}
-		binPositions[bin.LowerTick.String()][bin.Kind.String()] = big.NewInt(int64(i))
-
 		if bin.MergeID.Int64() == 0 {
 			d.putTypeAtTick(binMap, bin.Kind, bin.LowerTick)
+			if binPositions[bin.LowerTick.String()] == nil {
+				binPositions[bin.LowerTick.String()] = make(map[string]*big.Int)
+			}
+			binPositions[bin.LowerTick.String()][bin.Kind.String()] = big.NewInt(int64(i))
 		}
 	}
+
+	var staticExtra StaticExtra
+	if err := json.Unmarshal([]byte(p.StaticExtra), &staticExtra); err != nil {
+		logger.WithFields(logger.Fields{
+			"poolAddress": p.Address,
+			"error":       err,
+		}).Errorf("faield to unmarshal static extra")
+
+		return entity.Pool{}, err
+	}
+	_, _, sqrtPrice, liquidity, _, _ := currentTickLiquidity(activeTick, &MaverickPoolState{
+		TickSpacing:      staticExtra.TickSpacing,
+		Fee:              fee,
+		ProtocolFeeRatio: protocolFeeRatio,
+		ActiveTick:       activeTick,
+		BinCounter:       binCounter,
+		Bins:             bins,
+		BinPositions:     binPositions,
+		BinMap:           binMap,
+	})
 
 	var extra = Extra{
 		Fee:              fee,
@@ -147,7 +176,11 @@ func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entit
 		Bins:             bins,
 		BinPositions:     binPositions,
 		BinMap:           binMap,
+
+		SqrtPriceX96: sqrtPrice,
+		Liquidity:    liquidity,
 	}
+
 	extraBytes, err := json.Marshal(extra)
 	if err != nil {
 		logger.WithFields(logger.Fields{
