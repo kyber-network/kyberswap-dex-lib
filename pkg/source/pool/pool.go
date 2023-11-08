@@ -1,7 +1,15 @@
 package pool
 
 import (
+	"errors"
 	"math/big"
+	"sync"
+
+	"github.com/KyberNetwork/logger"
+)
+
+var (
+	ErrCalcAmountOutPanic = errors.New("calcAmountOut was panic")
 )
 
 type Pool struct {
@@ -14,6 +22,10 @@ func (t *Pool) GetInfo() PoolInfo {
 
 func (t *Pool) GetTokens() []string {
 	return t.Info.Tokens
+}
+
+func (t *Pool) GetReserves() []*big.Int {
+	return t.Info.Reserves
 }
 
 // CanSwapTo is the base method to get all swappable tokens from a pool by a given token address
@@ -76,6 +88,11 @@ type UpdateBalanceParams struct {
 	TokenAmountOut TokenAmount
 	Fee            TokenAmount
 	SwapInfo       interface{}
+
+	//Inventory is a reference to a per-request inventory balances.
+	// key is tokenAddress, balance is big.Float
+	// Must use reference (not copy)
+	Inventory *Inventory
 }
 
 type PoolToken struct {
@@ -104,4 +121,68 @@ func (t *PoolInfo) GetTokenIndex(address string) int {
 		}
 	}
 	return -1
+}
+
+// wrap around pool.CalcAmountOut and catch panic
+func CalcAmountOut(pool IPoolSimulator, tokenAmountIn TokenAmount, tokenOut string) (res *CalcAmountOutResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = ErrCalcAmountOutPanic
+			logger.WithFields(
+				logger.Fields{
+					"recover":     r,
+					"poolAddress": pool.GetAddress(),
+				}).Warn(err.Error())
+		}
+	}()
+
+	return pool.CalcAmountOut(tokenAmountIn, tokenOut)
+}
+
+// Inventory is a map of tokenAddress- balance.
+// The balance is stored WITHOUT decimals
+// DONOT directly modify it
+type Inventory struct {
+	lock    *sync.RWMutex
+	Balance map[string]*big.Int
+}
+
+func NewInventory(balance map[string]*big.Int) *Inventory {
+	return &Inventory{
+		lock:    &sync.RWMutex{},
+		Balance: balance,
+	}
+}
+
+// GetBalance returns a copy of balance for the Inventory
+func (i *Inventory) GetBalance(tokenAddress string) *big.Int {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+	balance, avail := i.Balance[tokenAddress]
+	if !avail {
+		return big.NewInt(0)
+	}
+	return big.NewInt(0).Set(balance)
+}
+
+// UpdateBalance will reduce the Balance to reflect the change in inventory
+// note this delta is amount with Decimal
+func (i *Inventory) UpdateBalance(decreaseTokenAddress, increaseTokenAddress string, decreaseDelta, increaseDelta *big.Int) (*big.Int, *big.Int, error) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	decreasedTokenBalance, avail := i.Balance[decreaseTokenAddress]
+	if !avail {
+		return big.NewInt(0), big.NewInt(0), ErrTokenNotAvailable
+	}
+	if decreasedTokenBalance.Cmp(decreaseDelta) < 0 {
+		return big.NewInt(0), big.NewInt(0), ErrNotEnoughInventory
+	}
+	i.Balance[decreaseTokenAddress] = decreasedTokenBalance.Sub(decreasedTokenBalance, decreaseDelta)
+
+	increasedTokenBalance, avail := i.Balance[increaseTokenAddress]
+	if !avail {
+		return big.NewInt(0), big.NewInt(0), ErrTokenNotAvailable
+	}
+	i.Balance[increaseTokenAddress] = increasedTokenBalance.Add(decreasedTokenBalance, increaseDelta)
+	return big.NewInt(0).Set(i.Balance[decreaseTokenAddress]), big.NewInt(0).Set(i.Balance[increaseTokenAddress]), nil
 }

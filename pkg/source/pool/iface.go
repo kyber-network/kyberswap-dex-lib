@@ -2,8 +2,10 @@ package pool
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/KyberNetwork/kyberswap-dex-lib/pkg/entity"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type IPoolsListUpdater interface {
@@ -16,8 +18,12 @@ type IPoolsListUpdater interface {
 	GetNewPools(ctx context.Context, metadataBytes []byte) ([]entity.Pool, []byte, error)
 }
 
+type GetNewPoolStateParams struct {
+	Logs []types.Log
+}
+
 type IPoolTracker interface {
-	GetNewPoolState(ctx context.Context, p entity.Pool) (entity.Pool, error)
+	GetNewPoolState(ctx context.Context, p entity.Pool, params GetNewPoolStateParams) (entity.Pool, error)
 }
 
 type IPoolSimulator interface {
@@ -30,9 +36,19 @@ type IPoolSimulator interface {
 	CanSwapTo(address string) []string
 	CanSwapFrom(address string) []string
 	GetTokens() []string
+	GetReserves() []*big.Int
 	GetAddress() string
 	GetExchange() string
 	GetType() string
 	GetMetaInfo(tokenIn string, tokenOut string) interface{}
 	GetTokenIndex(address string) int
+}
+
+type RFQResult struct {
+	NewAmountOut *big.Int
+	Extra        any
+}
+
+type IPoolRFQ interface {
+	RFQ(ctx context.Context, recipient string, params any) (RFQResult, error)
 }

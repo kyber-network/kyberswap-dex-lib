@@ -23,6 +23,8 @@ type (
 		// extra fields
 		sellOrderIDs []int64
 		buyOrderIDs  []int64
+
+		contractAddress string
 	}
 )
 
@@ -36,6 +38,15 @@ func NewPoolSimulator(entityPool entity.Pool) (*PoolSimulator, error) {
 	for i := 0; i < numTokens; i += 1 {
 		tokens[i] = entityPool.Tokens[i].Address
 		reserves[i] = utils.NewBig10(entityPool.Reserves[i])
+	}
+
+	var contractAddress string
+	var staticExtra StaticExtra
+	if err := json.Unmarshal([]byte(entityPool.StaticExtra), &staticExtra); err != nil {
+		// this is optional for now, will changed to required later
+		contractAddress = ""
+	} else {
+		contractAddress = staticExtra.ContractAddress
 	}
 
 	var extra Extra
@@ -70,6 +81,8 @@ func NewPoolSimulator(entityPool entity.Pool) (*PoolSimulator, error) {
 		buyOrderIDs:   buyOrderIDs,
 		ordersMapping: ordersMapping,
 		tokens:        entity.ClonePoolTokens(entityPool.Tokens),
+
+		contractAddress: contractAddress,
 	}, nil
 }
 
@@ -246,10 +259,14 @@ func (p *PoolSimulator) getSwapSide(tokenIn string, TokenOut string) SwapSide {
 }
 
 func (p *PoolSimulator) GetMetaInfo(_ string, _ string) interface{} {
-	return nil
+	return p.contractAddress
 }
 
 func newFilledOrderInfo(order *order, filledTakingAmount, filledMakingAmount string, feeAmount string) *FilledOrderInfo {
+	feeConfig := ""
+	if order.FeeConfig != nil {
+		feeConfig = order.FeeConfig.String()
+	}
 	return &FilledOrderInfo{
 		OrderID:              order.ID,
 		FilledTakingAmount:   filledTakingAmount,
@@ -264,6 +281,7 @@ func newFilledOrderInfo(order *order, filledTakingAmount, filledMakingAmount str
 		AllowedSenders:       order.AllowedSenders,
 		GetMakerAmount:       order.GetMakerAmount,
 		GetTakerAmount:       order.GetTakerAmount,
+		FeeConfig:            feeConfig,
 		FeeRecipient:         order.FeeRecipient,
 		MakerAssetData:       order.MakerAssetData,
 		MakerTokenFeePercent: order.MakerTokenFeePercent,
