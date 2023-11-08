@@ -34,7 +34,8 @@ type PriceItem struct {
 
 // ListPriceLevelsResult is the result of list price levels
 type ListPriceLevelsResult struct {
-	Prices map[string]PriceItem `json:"prices"`
+	Prices   map[string]PriceItem `json:"prices"`
+	Balances map[string]float64   `json:"balances"`
 }
 
 type StaticExtra struct {
@@ -100,4 +101,8 @@ type RFQExtra struct {
 	TakerAmount        string `json:"takerAmount"`
 	Signature          string `json:"signature"`
 	Recipient          string `json:"recipient"`
+}
+
+type RFQMeta struct {
+	Timestamp int64 `json:"timestamp"`
 }
