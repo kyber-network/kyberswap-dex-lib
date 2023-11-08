@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"strings"
 	"time"
+
 )
 
 type PoolTracker struct {
@@ -32,7 +33,11 @@ func NewPoolTracker(cfg *Config, ethrpcClient *ethrpc.Client) *PoolTracker {
 	}
 }
 
-func (d *PoolTracker) GetNewPoolState(ctx context.Context, p entity.Pool) (entity.Pool, error) {
+func (d *PoolTracker) GetNewPoolState(
+	ctx context.Context,
+	p entity.Pool,
+	_ pool.GetNewPoolStateParams,
+) (entity.Pool, error) {
 	logger.WithFields(logger.Fields{
 		"address": p.Address,
 	}).Infof("[%s] Start getting new states of pool", p.Type)
@@ -198,6 +203,9 @@ func (d *PoolTracker) querySubgraph(
 	p entity.Pool,
 ) (*SubgraphAsset, error) {
 	req := graphql.NewRequest(fmt.Sprintf(`{
+
+		_meta { block { timestamp }}
+
 		pool(
 			id: "%v"
 		  ) {
@@ -210,7 +218,10 @@ func (d *PoolTracker) querySubgraph(
 	)
 
 	var response struct {
-		Pool *SubgraphAsset `json:"pool"`
+
+		Pool *SubgraphAsset            `json:"pool"`
+		Meta *valueobject.SubgraphMeta `json:"_meta"`
+
 	}
 	if err := d.graphqlClient.Run(ctx, req, &response); err != nil {
 		logger.WithFields(logger.Fields{
@@ -220,5 +231,7 @@ func (d *PoolTracker) querySubgraph(
 		return nil, err
 	}
 
+
+	response.Meta.CheckIsLagging(d.config.DexID, p.Address)
 	return response.Pool, nil
 }
