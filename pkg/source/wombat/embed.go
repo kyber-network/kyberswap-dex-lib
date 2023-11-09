@@ -10,3 +10,7 @@ var AssetABIData []byte
 
 //go:embed abi/DynamicAsset.json
 var DynamicAssetABIData []byte
+
+
+//go:embed abi/CrossChainPool.json
+var CrossChainPoolABIData []byte

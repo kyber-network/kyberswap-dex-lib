@@ -36,6 +36,7 @@ type IPoolSimulator interface {
 	CanSwapTo(address string) []string
 	CanSwapFrom(address string) []string
 	GetTokens() []string
+	GetReserves() []*big.Int
 	GetAddress() string
 	GetExchange() string
 	GetType() string
