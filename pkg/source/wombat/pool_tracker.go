@@ -14,7 +14,6 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
 )
 
 type PoolTracker struct {
